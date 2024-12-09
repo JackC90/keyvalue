@@ -62,7 +62,7 @@ class KeyValueObjectTest extends TestCase
         $response->assertStatus(201)
             ->assertJson([
                 'key' => $data['key'],
-                'value' => json_encode($data['value'])
+                'value' => $data['value']
             ]);
     }
 
