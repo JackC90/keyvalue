@@ -18,7 +18,7 @@ jobs:
         image: mariadb:latest
         env:
           MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: yes
-          MARIADB_DATABASE: test
+          MARIADB_DATABASE: mysql
           MARIADB_ROOT_PASSWORD: root
         ports:
           - 3306:3306
@@ -28,7 +28,14 @@ jobs:
         image: redis:latest
         ports:
           - 6379:6379
-        options: --health-cmd="redis-server --test-memory" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: >
+          --health-cmd="redis-server --test-memory" 
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+          --maxmemory 256mb
+          --save 900 1 --save 300 10 --save 60 10000
+          --appendonly yes
 
     steps:
       - uses: actions/checkout@v2
