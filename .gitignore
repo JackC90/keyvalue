@@ -7,9 +7,11 @@
 /storage/pail
 /vendor
 .env
+.env.local
 .env.backup
 .env.production
 .env.testing
+.env.testing.*
 .phpactor.json
 .phpunit.result.cache
 Homestead.json
@@ -22,3 +24,4 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+docker-compose.yaml

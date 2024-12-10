@@ -15,27 +15,25 @@ jobs:
 
     services:
       mariadb:
-        image: mariadb:latest
+        image: mariadb:11.7.1-ubi9-rc
         env:
-          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: yes
-          MARIADB_DATABASE: mysql
-          MARIADB_ROOT_PASSWORD: root
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mysql
+          MYSQL_PASSWORD: root
+          MYSQL_ALLOW_EMPTY_PASSWORD: no
         ports:
           - 3306:3306
-        options: --health-cmd="mariadb-admin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: --health-cmd="mariadb-admin ping" --health-interval=10s --health-timeout=15s --health-retries=3
 
       redis:
-        image: redis:latest
+        image: redis:8.0-M02-alpine
         ports:
           - 6379:6379
         options: >
-          --health-cmd="redis-server --test-memory" 
+          --health-cmd="redis-cli ping" 
           --health-interval=10s
           --health-timeout=5s
           --health-retries=3
-          --maxmemory 256mb
-          --save 900 1 --save 300 10 --save 60 10000
-          --appendonly yes
 
     steps:
       - uses: actions/checkout@v2
@@ -58,11 +56,32 @@ jobs:
       - name: Install composer dependencies
         run: composer install --no-scripts
 
+      - name: Make envfile
+        uses: SpicyPizza/create-envfile@v2.0
+        with:
+          envkey_DEBUG: false
+          envkey_APP_KEY: ${{ secrets.ENVKEY_APP_KEY }}  
+          envkey_DB_CONNECTION: mariadb 
+          envkey_DB_DATABASE: mysql 
+          envkey_DB_HOST: 127.0.0.1
+          envkey_DB_PASSWORD: root  
+          envkey_DB_PORT: 3306 
+          envkey_DB_USERNAME: root  
+          envkey_REDIS_CLIENT: predis 
+          envkey_REDIS_HOST: 127.0.0.1
+          envkey_REDIS_PORT: 6379
+          envkey_APP_ENV: testing 
+          envkey_APP_NAME: ${{ vars.ENVKEY_APP_NAME }}  
+          envkey_CACHE_STORE: ${{ vars.ENVKEY_CACHE_STORE }}   
+          file_name: .env
+          fail_on_empty: false
+          sort_keys: false
+
       - name: Prepare Laravel Application
         run: |
-          cp .env.testing.prod .env.testing
+          cp .env .env.testing
           php artisan key:generate
-          php artisan migrate --env=testing
+          php artisan migrate --env=testing --force
 
       - name: Run Test suite
-        run: php artisan test --env=testing
+        run: php artisan test --env=testing -v
