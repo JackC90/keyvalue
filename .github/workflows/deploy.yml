@@ -136,7 +136,7 @@ jobs:
 
       - name: Create deployment package
         run: |
-          zip -r deploy.zip . -x "*.git*" "tests/*" "storage/logs/*" "storage/framework/cache/* vendor/*"
+          zip -r deploy.zip . -x "*.git*" "tests/*" "storage/logs/*" "storage/framework/cache/*" "vendor" "vendor/*"
 
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v22
