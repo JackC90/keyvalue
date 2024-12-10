@@ -1,17 +1,96 @@
-name: Deploy to AWS Elastic Beanstalk
+name: CI
 
 on:
-  workflow_run:
-    workflows: [CI]
-    branches: [main]
-    types:
-      - completed
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
 
 jobs:
-  deploy:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+  tests:
     runs-on: ubuntu-latest
     environment: production
+
+    services:
+      mariadb:
+        image: mariadb:11.7.1-ubi9-rc
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mysql
+          MYSQL_PASSWORD: root
+          MYSQL_ALLOW_EMPTY_PASSWORD: no
+        ports:
+          - 3306:3306
+        options: --health-cmd="mariadb-admin ping" --health-interval=10s --health-timeout=15s --health-retries=3
+
+      redis:
+        image: redis:8.0-M02-alpine
+        ports:
+          - 6379:6379
+        options: >
+          --health-cmd="redis-cli ping" 
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v2
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            composer-
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+
+      - name: Install composer dependencies
+        run: composer install --no-scripts
+
+      - name: Make envfile
+        uses: SpicyPizza/create-envfile@v2.0
+        with:
+          envkey_DEBUG: false
+          envkey_APP_KEY: ${{ secrets.APP_KEY }}  
+          envkey_DB_CONNECTION: mariadb 
+          envkey_DB_DATABASE: mysql 
+          envkey_DB_HOST: 127.0.0.1
+          envkey_DB_PASSWORD: root  
+          envkey_DB_PORT: 3306 
+          envkey_DB_USERNAME: root  
+          envkey_REDIS_CLIENT: predis
+          envkey_REDIS_HOST: 127.0.0.1
+          envkey_REDIS_PORT: 6379
+          envkey_APP_ENV: testing 
+          envkey_APP_NAME: ${{ vars.APP_NAME }}  
+          envkey_CACHE_STORE: redis   
+          file_name: .env
+          fail_on_empty: false
+          sort_keys: false
+
+      - name: Prepare Laravel Application
+        run: |
+          cp .env .env.testing
+          php artisan key:generate
+          php artisan migrate --env=testing --force
+
+      - name: Run Test suite
+        run: php artisan test --env=testing
+
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    needs: [tests]
+    if: always() && needs.tests.result == 'success'
     
     steps:
       - uses: actions/checkout@v2
@@ -22,23 +101,23 @@ jobs:
         uses: SpicyPizza/create-envfile@v2.0
         with:
           envkey_DEBUG: false
-          envkey_APP_KEY: ${{ secrets.ENVKEY_APP_KEY }}  
-          envkey_AWS_ACCESS_KEY_ID: ${{ secrets.ENVKEY_AWS_ACCESS_KEY_ID }}  
-          envkey_AWS_SECRET_ACCESS_KEY: ${{ secrets.ENVKEY_AWS_SECRET_ACCESS_KEY }}  
-          envkey_BCRYPT_ROUNDS: ${{ secrets.ENVKEY_BCRYPT_ROUNDS }}  
-          envkey_DB_CONNECTION: ${{ secrets.ENVKEY_DB_CONNECTION }}  
-          envkey_DB_DATABASE: ${{ secrets.ENVKEY_DB_DATABASE }}  
-          envkey_DB_HOST: ${{ secrets.ENVKEY_DB_HOST }}  
-          envkey_DB_PASSWORD: ${{ secrets.ENVKEY_DB_PASSWORD }}  
-          envkey_DB_PORT: ${{ secrets.ENVKEY_DB_PORT }}  
-          envkey_DB_USERNAME: ${{ secrets.ENVKEY_DB_USERNAME }}  
-          envkey_REDIS_CLIENT: ${{ secrets.ENVKEY_REDIS_CLIENT }}  
-          envkey_REDIS_HOST: ${{ secrets.ENVKEY_REDIS_HOST }}  
-          envkey_REDIS_PASSWORD: ${{ secrets.ENVKEY_REDIS_PASSWORD }}  
-          envkey_REDIS_PORT: ${{ secrets.ENVKEY_REDIS_PORT }}
-          envkey_APP_ENV: ${{ vars.ENVKEY_APP_ENV }}  
-          envkey_APP_NAME: ${{ vars.ENVKEY_APP_NAME }}  
-          envkey_CACHE_STORE: ${{ vars.ENVKEY_CACHE_STORE }}   
+          envkey_APP_KEY: ${{ secrets.APP_KEY }}  
+          envkey_AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}  
+          envkey_AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  
+          envkey_BCRYPT_ROUNDS: ${{ secrets.BCRYPT_ROUNDS }}  
+          envkey_DB_CONNECTION: ${{ secrets.DB_CONNECTION }}  
+          envkey_DB_DATABASE: ${{ secrets.DB_DATABASE }}  
+          envkey_DB_HOST: ${{ secrets.DB_HOST }}  
+          envkey_DB_PASSWORD: ${{ secrets.DB_PASSWORD }}  
+          envkey_DB_PORT: ${{ secrets.DB_PORT }}  
+          envkey_DB_USERNAME: ${{ secrets.DB_USERNAME }}  
+          envkey_REDIS_CLIENT: ${{ secrets.REDIS_CLIENT }}  
+          envkey_REDIS_HOST: ${{ secrets.REDIS_HOST }}  
+          envkey_REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}  
+          envkey_REDIS_PORT: ${{ secrets.REDIS_PORT }}
+          envkey_APP_ENV: ${{ vars.APP_ENV }}  
+          envkey_APP_NAME: ${{ vars.APP_NAME }}  
+          envkey_CACHE_STORE: ${{ vars.CACHE_STORE }}   
           file_name: .env
           fail_on_empty: false
           sort_keys: false
@@ -46,7 +125,7 @@ jobs:
       - name: Install PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.1
+          php-version: 8.3
 
       - name: Install Composer Dependencies
         run: composer install --no-dev --optimize-autoloader
