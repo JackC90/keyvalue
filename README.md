@@ -7,60 +7,96 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
-## About Laravel
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+# Key-value API
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Welcome to the Key-Value Store API! This API allows you to create, retrieve, and manage key-value pairs efficiently. Below are the details of the available endpoints, including request formats and expected responses.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Endpoints
+---------
 
-## Learning Laravel
+1\. Create Record
+-----------------
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+**POST** `/api/object` This endpoint allows you to create a new record in the key-value store.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+Request Body
+------------
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```json
+{
+    "key": "test001",
+    "value": "{ \"name\": \"New Object\" }"
+}
+```
 
-## Laravel Sponsors
+Response
+--------
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+On successful creation, the API will return the created record along with timestamps for creation and last update:
 
-### Premium Partners
+```json
+{
+    "key": "test001",
+    "value": "{ \"name\": \"Newer Object\" }",
+    "updated_at": "2024-12-10T07:19:49.000000Z",
+    "created_at": "2024-12-10T07:19:49.000000Z",
+    "id": 11
+}
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+2\. Get All Records
+-------------------
 
-## Contributing
+**GET** `/api/object/get_all_records` This endpoint retrieves all records stored in the key-value store.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Response
+--------
 
-## Code of Conduct
+The response will be an array of records, each containing its ID, key, value, and timestamps:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```json
+[
+    {
+        "id": 11,
+        "key": "test001",
+        "value": "{ \"name\": \"Newer Object\" }",
+        "created_at": "2024-12-10T07:19:49.000000Z",
+        "updated_at": "2024-12-10T07:19:49.000000Z"
+    },
+    {
+        "id": 10,
+        "key": "test001",
+        "value": "{ \"name\": \"Newer Object\" }",
+        "created_at": "2024-12-10T07:18:22.000000Z",
+        "updated_at": "2024-12-10T07:18:22.000000Z"
+    }
+]
+```
 
-## Security Vulnerabilities
+3\. Get Record by Key
+---------------------
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+**GET** `/api/object/{key}` This endpoint retrieves a specific record by its key. You can also optionally query for a specific timestamp.
 
-## License
+Query Parameters (Optional)
+---------------------------
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+*   `timestamp`: A Unix timestamp to filter records.
+
+Response
+--------
+
+The response will include the requested record's details:
+
+```json
+{
+    "id": 11,
+    "key": "test001",
+    "value": "{ \"name\": \"Newer Object\" }",
+    "created_at": "2024-12-10T07:19:49.000000Z",
+    "updated_at": "2024-12-10T07:19:49.000000Z"
+}
+```
+
+
