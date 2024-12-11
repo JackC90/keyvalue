@@ -122,7 +122,8 @@ jobs:
           php-version: 8.3
 
       - name: Install Composer Dependencies
-        run: composer install --no-dev --optimize-autoloader
+        run: |
+          composer install --no-dev --optimize-autoloader
 
       - name: Generate app key
         run: php artisan key:generate --force
@@ -138,14 +139,23 @@ jobs:
         run: |
           zip -r deploy.zip . -x "*.git*" "tests/*" "storage/logs/*" "storage/framework/cache/*" "vendor" "vendor/*"
 
-      - name: Deploy to Elastic Beanstalk
-        uses: einaregilsson/beanstalk-deploy@v22
+      # - name: Deploy to Elastic Beanstalk
+      #   uses: einaregilsson/beanstalk-deploy@v22
+      #   with:
+      #     aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     application_name: keyvalue-app
+      #     environment_name: keyvalue-app-env
+      #     version_label: ${{ github.sha }}
+      #     region: ap-southeast-1
+      #     deployment_package: deploy.zip
+      #     wait_for_deployment: true 
+
+      - name: Deploy to Google Cloud
+        uses: google-github-actions/deploy-cloud-run
         with:
-          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: keyvalue-app
-          environment_name: keyvalue-app-env
-          version_label: ${{ github.sha }}
-          region: ap-southeast-1
-          deployment_package: deploy.zip
-          wait_for_deployment: true 
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_name: <YOUR_CLOUD_RUN_SERVICE_NAME>  # Replace with your Cloud Run service name
+          image: gcr.io/${{ secrets.GCP_PROJECT_ID }}/<YOUR_IMAGE_NAME>  # Replace with your image name
+          region: <YOUR_REGION>  # e.g., us-central1
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
