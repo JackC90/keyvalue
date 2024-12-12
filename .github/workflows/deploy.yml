@@ -125,7 +125,7 @@ jobs:
         uses: FlowSquad/docker-cloud-build@v1.0.2
         with:
           gcp-project-id: ${{ secrets.GCP_PROJECT_ID }}
-          gcp-service-account-key: ${{ secrets.GCP_SA_KEY }}
+          gcp-service-account-key: ${{ secrets.GCP_SA_JSON }}
           gcp-gcr-region: asia.gcr.io
           image-name: keyvalue
           image-sources: '*'
