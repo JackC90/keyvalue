@@ -75,7 +75,7 @@ jobs:
         run: |
           cp .env .env.testing
           php artisan key:generate
-          php artisan migrate --env=testing --force
+          php artisan migrate --force --env=testing
 
       - name: Run Test suite
         run: php artisan test --env=testing
@@ -131,7 +131,7 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t ${{ vars.DOCKER_IMAGE_URL }}:latest -f Dockerfile.prod .
+          docker build -t ${{ vars.DOCKER_IMAGE_URL }}:latest -f Dockerfile .
           docker push ${{ vars.DOCKER_IMAGE_URL }}:latest
 
       - name: Deploy to Cloud Run
