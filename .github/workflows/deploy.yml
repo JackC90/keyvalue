@@ -131,14 +131,14 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t ${{ env.DOCKER_IMAGE_URL }}:latest -f Dockerfile.prod .
-          docker push ${{ env.DOCKER_IMAGE_URL }}:latest
+          docker build -t ${{ vars.DOCKER_IMAGE_URL }}:latest -f Dockerfile.prod .
+          docker push ${{ vars.DOCKER_IMAGE_URL }}:latest
 
       - name: Deploy to Cloud Run
         run: |
           echo SERVICE_NAME $SERVICE_NAME
           gcloud run deploy $SERVICE_NAME \
-            --image ${{ env.DOCKER_IMAGE_URL }}:latest \
+            --image ${{ vars.DOCKER_IMAGE_URL }}:latest \
             --platform managed \
             --region asia-southeast1 \
             --allow-unauthenticated
