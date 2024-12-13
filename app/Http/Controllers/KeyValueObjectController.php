@@ -11,15 +11,8 @@ use Illuminate\Support\Facades\Cache;
 class KeyValueObjectController extends Controller
 {
     private static function clearCacheSet(string $key): void {
-        $cacheKeys = [
-            "key_value_objects",
-            "key_value_object_" . $key,
-            ...Redis::keys("key_value_object_" . $key . "_timestamp_*")
-        ];
-
-        foreach ($cacheKeys as $cacheKey) {
-            Cache::forget($cacheKey);
-        }
+        Cache::tags(['key:' . $key])->flush();
+        Cache::forget("key_value_objects");
     }
 
     /**
@@ -68,7 +61,7 @@ class KeyValueObjectController extends Controller
             $timestamp = $request->query('timestamp');
             $cacheKey .= '_timestamp_' . $timestamp;
 
-            $object = Cache::remember($cacheKey, 600, function () use ($key, $timestamp) {
+            $object = Cache::tags(['key:'.$key])->remember($cacheKey, 600, function () use ($key, $timestamp) {
                 return KeyValueObject::where('key', $key)
                     ->where('created_at', '<=', date('Y-m-d H:i:s', $timestamp))
                     ->orderBy('created_at', 'desc')
@@ -76,13 +69,14 @@ class KeyValueObjectController extends Controller
                     ->first();
             });
         } else {
-            $object = Cache::remember($cacheKey, 600, function () use ($key) {
+            $object = Cache::tags(['key:'.$key])->remember($cacheKey, 600, function () use ($key) {
                 return KeyValueObject::where('key', $key)
                     ->orderBy('created_at', 'desc')
                     ->orderBy('id', 'desc')
                     ->first();
             });
         }
+
         return response()->json($object);
     }
 

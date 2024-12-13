@@ -1,7 +1,7 @@
-FROM php:8.3 as web
+FROM php:8.3-fpm-alpine
 
 #add nginx and supervisor
-RUN apk add --no-cache nginx supervisor wget
+RUN apk update && apk add --no-cache nginx supervisor wget
 
 #create process for nginx
 RUN mkdir -p /run/nginx
