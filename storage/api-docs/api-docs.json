@@ -1,0 +1,144 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Key-Value Object API",
+        "description": "API for managing key-value objects.",
+        "contact": {
+            "name": "JC",
+            "email": "email@example.com"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/object/get_all_records": {
+            "get": {
+                "summary": "Display a listing of all key-value objects.",
+                "operationId": "4c40f4b6eab02e55b48bf5db4fbd2e70",
+                "responses": {
+                    "200": {
+                        "description": "A list of key-value objects",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/KeyValueObject"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/object": {
+            "post": {
+                "summary": "Store a newly created key-value object.",
+                "operationId": "54ba4335926aeff0bba7433ec6d9dacb",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "key",
+                                    "value"
+                                ],
+                                "properties": {
+                                    "key": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "value": {
+                                        "type": "string",
+                                        "format": "json"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Key-value object created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/KeyValueObject"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/object/{key}": {
+            "get": {
+                "summary": "Get a key-value object by key.",
+                "operationId": "66df879b07f1c2dac6859c7969f969f2",
+                "parameters": [
+                    {
+                        "name": "key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Key-value object retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/KeyValueObject"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Key-value object not found"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "KeyValueObject": {
+                "required": [
+                    "key",
+                    "value"
+                ],
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "value": {
+                        "type": "string",
+                        "format": "json"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            }
+        }
+    }
+}

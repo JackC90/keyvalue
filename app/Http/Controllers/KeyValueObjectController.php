@@ -8,15 +8,52 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Cache;
 
+/**
+ * @OA\Info(
+ *     title="Key-Value Object API",
+ *     version="1.0.0",
+ *     description="API for managing key-value objects.",
+ *     @OA\Contact(
+ *         name="JC",
+ *         email="email@example.com"
+ *     ),
+ *     @OA\License(
+ *         name="Apache 2.0",
+ *         url="http://www.apache.org/licenses/LICENSE-2.0.html"
+ *     )
+ * )
+ */
+
+
 class KeyValueObjectController extends Controller
 {
+     /**
+     * @OA\Schema(
+     *     schema="KeyValueObject",
+     *     type="object",
+     *     required={"key", "value"},
+     *     @OA\Property(property="key", type="string", maxLength=255),
+     *     @OA\Property(property="value", type="string", format="json"),
+     *     @OA\Property(property="created_at", type="string", format="date-time"),
+     *     @OA\Property(property="updated_at", type="string", format="date-time")
+     * )
+     */
+
     private static function clearCacheSet(string $key): void {
         Cache::tags(['key:' . $key])->flush();
         Cache::forget("key_value_objects");
     }
 
     /**
-     * Display a listing of the resource.
+     * @OA\Get(
+     *     path="/api/object/get_all_records",
+     *     summary="Display a listing of all key-value objects.",
+     *     @OA\Response(
+     *         response=200,
+     *         description="A list of key-value objects",
+     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/KeyValueObject"))
+     *     )
+     * )
      */
     public function index(): JsonResponse
     {
@@ -31,7 +68,27 @@ class KeyValueObjectController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * @OA\Post(
+     *     path="/api/object",
+     *     summary="Store a newly created key-value object.",
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"key","value"},
+     *             @OA\Property(property="key", type="string", maxLength=255),
+     *             @OA\Property(property="value", type="string", format="json")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Key-value object created successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/KeyValueObject")
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error"
+     *     )
+     * )
      */
     public function store(Request $request): JsonResponse
     {
@@ -51,7 +108,25 @@ class KeyValueObjectController extends Controller
     }
 
     /**
-     * Get all object key.
+     * @OA\Get(
+     *     path="/api/object/{key}",
+     *     summary="Get a key-value object by key.",
+     *     @OA\Parameter(
+     *         name="key",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Key-value object retrieved successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/KeyValueObject")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Key-value object not found"
+     *     )
+     * )
      */
     public function getByKey(Request $request, string $key): JsonResponse
     {
@@ -81,7 +156,7 @@ class KeyValueObjectController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified resource from storage. (internal use)
      */
     public function destroy(KeyValueObject $keyValueObject): JsonResponse
     {
