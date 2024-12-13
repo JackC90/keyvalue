@@ -29,3 +29,4 @@ yarn-error.log
 /.zed
 docker-compose.yaml
 wait-for-it.sh
+service-generated.yaml
