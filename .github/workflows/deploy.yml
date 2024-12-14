@@ -148,17 +148,6 @@ jobs:
             --vpc-connector ${{ vars.VPC_CONNECTOR }} \
             --allow-unauthenticated
 
-      - name: Run migrations
-        run: |
-          gcloud run jobs create migrate \
-            --image=${{ vars.DOCKER_IMAGE_URL }}:latest \
-            --region=asia-southeast1 \
-            --vpc-connector=${{ vars.VPC_CONNECTOR }} \
-            --set-cloudsql-instances=${{ vars.CLOUD_SQL_INSTANCE }} \
-            --command=php \
-            --execute-now \
-            --args="artisan migrate --force"
-
       - name: Check and Create Migrate Job
         run: |
           if ! gcloud run jobs describe migrate-job --region asia-southeast1; then
@@ -166,6 +155,7 @@ jobs:
             gcloud run jobs create migrate-job \
               --image ${{ vars.DOCKER_IMAGE_URL }} \
               --set-cloudsql-instances=${{ vars.CLOUD_SQL_INSTANCE }}
+              --vpc-connector=${{ vars.VPC_CONNECTOR }} \
               --region asia-southeast1 \
               --command "php artisan migrate --force"
           else
