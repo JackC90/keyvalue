@@ -158,3 +158,20 @@ jobs:
             --command=php \
             --execute-now \
             --args="artisan migrate --force"
+
+      - name: Check and Create Migrate Job
+        run: |
+          if ! gcloud run jobs describe migrate-job --region asia-southeast1; then
+            echo "Creating migrate job..."
+            gcloud run jobs create migrate-job \
+              --image ${{ vars.DOCKER_IMAGE_URL }} \
+              --set-cloudsql-instances=${{ vars.CLOUD_SQL_INSTANCE }}
+              --region asia-southeast1 \
+              --command "php artisan migrate --force"
+          else
+            echo "Migrate job already exists."
+          fi
+
+      - name: Execute Migrate Job
+        run: |
+          gcloud run jobs execute migrate-job --region asia-southeast1

@@ -1,7 +1,8 @@
 FROM php:8.3-fpm-alpine
 
 #add nginx and supervisor
-RUN apk update && apk add --no-cache nginx supervisor wget
+RUN apk update && apk add --no-cache nginx supervisor wget libpng libpng-dev \
+    && docker-php-ext-install pdo pdo_mysql
 
 #create process for nginx
 RUN mkdir -p /run/nginx
@@ -26,5 +27,7 @@ RUN chown -R www-data:www-data /app
 
 #run the command for starting the server
 CMD sh /app/docker/startup.sh
+
+WORKDIR /app
 
 # ENTRYPOINT ["sh", "/app/docker/laravel.sh"]
