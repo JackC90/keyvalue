@@ -17,8 +17,8 @@ jobs:
     environment: production
 
     services:
-      mariadb:
-        image: mariadb:11.7.1-ubi9-rc
+      mysql:
+        image: mysql:latest
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: mysql
@@ -26,7 +26,7 @@ jobs:
           MYSQL_ALLOW_EMPTY_PASSWORD: no
         ports:
           - 3306:3306
-        options: --health-cmd="mariadb-admin ping" --health-interval=10s --health-timeout=15s --health-retries=3
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=15s --health-retries=3
       redis:
         image: redis:8.0-M02-alpine
         ports:
@@ -58,8 +58,8 @@ jobs:
         with:
           envkey_DEBUG: false
           envkey_APP_KEY: ${{ secrets.APP_KEY }}  
-          envkey_DB_CONNECTION: mariadb 
-          envkey_DB_DATABASE: mysql 
+          envkey_DB_CONNECTION: mysql 
+          envkey_DB_DATABASE: test 
           envkey_DB_HOST: 127.0.0.1
           envkey_DB_PASSWORD: root  
           envkey_DB_PORT: 3306 
@@ -114,7 +114,8 @@ jobs:
           envkey_REDIS_PORT: ${{ secrets.REDIS_PORT }}
           envkey_APP_ENV: ${{ vars.APP_ENV }}  
           envkey_APP_NAME: ${{ vars.APP_NAME }}  
-          envkey_CACHE_STORE: ${{ vars.CACHE_STORE }}   
+          envkey_CACHE_STORE: ${{ vars.CACHE_STORE }}
+          envkey_L5_SWAGGER_GENERATE_ALWAYS: ${{ vars.L5_SWAGGER_GENERATE_ALWAYS }}  
           file_name: .env
           fail_on_empty: false
           sort_keys: false

@@ -20,18 +20,19 @@ class KeyValueObjectTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function createTestObject(string $key, array $value, string $date = null): KeyValueObject
+    private function createTestObject(string $key, ?string $valueStr, ?string $date = null): array
     {
-        return KeyValueObjectTestModel::create([
+        $data = [
             'key' => $key,
-            'value' => json_encode($value),
+            'value' => $valueStr,
             'created_at' => $date ? Carbon::parse($date) : now(),
-        ]);
+        ];
+        KeyValueObjectTestModel::create($data);
+        return $data;
     }
 
     public function test_can_get_all_records()
     {
-        // Create 150 records to test pagination
         KeyValueObject::factory()->count(2)->create();
 
         $response = $this->getJson('/api/object/get_all_records');
@@ -60,7 +61,7 @@ class KeyValueObjectTest extends TestCase
         $response = $this->postJson('/api/object', $data);
 
         $response->assertStatus(201)
-            ->assertJson([
+            ->assertJsonFragment([
                 'key' => $data['key'],
                 'value' => $data['value']
             ]);
@@ -71,13 +72,13 @@ class KeyValueObjectTest extends TestCase
         // Create multiple objects with same key but different dates
         $oldObject = $this->createTestObject(
             'mykey',
-            ['name' => 'Old Object'],
+            '{"name": "Old Object"}',
             '2024-01-01 00:00:00'
         );
 
         $newObject = $this->createTestObject(
             'mykey',
-            ['name' => 'New Object'],
+            '{"name": "New Object"}',
             '2024-01-01 00:10:00'
         );
 
@@ -85,10 +86,7 @@ class KeyValueObjectTest extends TestCase
 
         // gets latest if no timestamp given
         $response->assertStatus(200)
-            ->assertJson([
-                'key' => 'mykey',
-                'value' => json_encode(['name' => 'New Object'])
-            ]);
+            ->assertJsonFragment([ 'value' => '{"name": "New Object"}']);
     }
 
     public function test_get_by_key_with_timestamp()
@@ -96,31 +94,58 @@ class KeyValueObjectTest extends TestCase
         // Create objects with different timestamps
         $oldObject = $this->createTestObject(
             'mykey',
-            ['name' => 'Old Object'],
+            '{"name": "Old Object"}',
             '2024-01-01 00:00:00'
         );
 
         $middleObject = $this->createTestObject(
             'mykey',
-            ['name' => 'Middle Object'],
+            '{"name": "Middle Object"}',
             '2024-02-01 00:00:00'
         );
 
         $newObject = $this->createTestObject(
             'mykey',
-            ['name' => 'New Object'],
+            '{"name": "New Object"}',
             '2024-03-01 00:00:00'
         );
+
+        // Get object at middle timestamp
+        $timestamp = strtotime('2024-01-15 00:00:00');
+        $response = $this->getJson("/api/object/mykey?timestamp={$timestamp}");
+
+        $response->assertStatus(200)
+            ->assertJsonFragment($oldObject);
 
         // Get object at middle timestamp
         $timestamp = strtotime('2024-02-15 00:00:00');
         $response = $this->getJson("/api/object/mykey?timestamp={$timestamp}");
 
         $response->assertStatus(200)
-            ->assertJson([
-                'key' => 'mykey',
-                'value' => json_encode(['name' => 'Middle Object'])
-            ]);
+            ->assertJsonFragment($middleObject);
+
+        // Get object at middle timestamp
+        $timestamp = strtotime('2024-03-15 00:00:00');
+        $response = $this->getJson("/api/object/mykey?timestamp={$timestamp}");
+
+        $response->assertStatus(200)
+            ->assertJsonFragment($newObject);
+    }
+
+    public function test_get_by_key_with_invalid_timestamp()
+    {
+        $response = $this->getJson("/api/object/mykey?timestamp=invalid_timestamp");
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['timestamp']);
+    }
+
+    public function test_get_by_key_with_negative_timestamp()
+    {
+        $response = $this->getJson("/api/object/mykey?timestamp=-1");
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['timestamp']);
     }
 
     public function test_returns_null_when_no_object_found()
@@ -146,7 +171,7 @@ class KeyValueObjectTest extends TestCase
     {
         $object = $this->createTestObject(
             'mykey',
-            ['name' => 'Test Object'],
+            '{"name":"Test Object"}',
             '2024-01-01 00:00:00'
         );
 

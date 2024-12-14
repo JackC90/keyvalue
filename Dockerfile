@@ -26,3 +26,5 @@ RUN chown -R www-data:www-data /app
 
 #run the command for starting the server
 CMD sh /app/docker/startup.sh
+
+ENTRYPOINT ["/app/docker/laravel.sh"]

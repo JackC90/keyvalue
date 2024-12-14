@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use \Illuminate\Validation\ValidationException;
 
 /**
  * @OA\Info(
@@ -57,14 +59,23 @@ class KeyValueObjectController extends Controller
      */
     public function index(): JsonResponse
     {
-        $keyValueObjects = Cache::remember('key_value_objects', 600, function () {
-            return KeyValueObject::orderBy('created_at', 'desc')
-                ->orderBy('id', 'desc')
-                ->take(200)
-                ->get();
-        });
+        try {
+            $keyValueObjects = Cache::remember('key_value_objects', 600, function () {
+                return KeyValueObject::orderBy('created_at', 'desc')
+                    ->orderBy('id', 'desc')
+                    ->take(200)
+                    ->get();
+            });
 
-        return response()->json($keyValueObjects);
+            return response()->json($keyValueObjects);
+        } catch (\Exception $e) {
+            Log::error('Error fetching key-value objects: ' . $e->getMessage());
+
+            return response()->json([
+                'error' => 'An error occurred while fetching key-value objects.',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -92,19 +103,33 @@ class KeyValueObjectController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'key' => 'required|string|max:255',
-            'value' => 'required|json'
-        ]);
+        try {
+            $validated = $request->validate([
+                'key' => 'required|string|max:255',
+                'value' => 'required|json'
+            ]);
 
-        $keyValueObject = KeyValueObject::create([
-            'key' => $validated['key'],
-            'value' => $validated['value'],
-        ]);
+            $keyValueObject = KeyValueObject::create([
+                'key' => $validated['key'],
+                'value' => $validated['value'],
+            ]);
 
-        self::clearCacheSet($keyValueObject->key);
+            self::clearCacheSet($keyValueObject->key);
 
-        return response()->json($keyValueObject, 201);
+            return response()->json($keyValueObject, 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation error',
+                'errors' => $e->validator->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error storing key-value object: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'An error occurred while storing the key-value object.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -130,29 +155,47 @@ class KeyValueObjectController extends Controller
      */
     public function getByKey(Request $request, string $key): JsonResponse
     {
-        $cacheKey = 'key_value_object_' . $key;
+        try {
+            $validated = $request->validate([
+                'timestamp' => 'nullable|integer|min:0'
+            ]);
 
-        if ($request->has('timestamp')) {
-            $timestamp = $request->query('timestamp');
-            $cacheKey .= '_timestamp_' . $timestamp;
+            $cacheKey = 'key_value_object_' . $key;
 
-            $object = Cache::tags(['key:'.$key])->remember($cacheKey, 600, function () use ($key, $timestamp) {
-                return KeyValueObject::where('key', $key)
-                    ->where('created_at', '<=', date('Y-m-d H:i:s', $timestamp))
-                    ->orderBy('created_at', 'desc')
-                    ->orderBy('id', 'desc')
-                    ->first();
-            });
-        } else {
-            $object = Cache::tags(['key:'.$key])->remember($cacheKey, 600, function () use ($key) {
-                return KeyValueObject::where('key', $key)
-                    ->orderBy('created_at', 'desc')
-                    ->orderBy('id', 'desc')
-                    ->first();
-            });
+            if ($request->has('timestamp')) {
+                $timestamp = $request->query('timestamp');
+                $cacheKey .= '_timestamp_' . $timestamp;
+
+                $object = Cache::tags(['key:' . $key])->remember($cacheKey, 600, function () use ($key, $timestamp) {
+                    return KeyValueObject::where('key', $key)
+                        ->where('created_at', '<=', date('Y-m-d H:i:s', $timestamp))
+                        ->orderBy('created_at', 'desc')
+                        ->orderBy('id', 'desc')
+                        ->first();
+                });
+            } else {
+                $object = Cache::tags(['key:' . $key])->remember($cacheKey, 600, function () use ($key) {
+                    return KeyValueObject::where('key', $key)
+                        ->orderBy('created_at', 'desc')
+                        ->orderBy('id', 'desc')
+                        ->first();
+                });
+            }
+
+            return response()->json($object);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation error',
+                'errors' => $e->validator->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error fetching key-value object: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'An error occurred while fetching the key-value object.',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        return response()->json($object);
     }
 
     /**
