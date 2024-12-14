@@ -145,4 +145,15 @@ jobs:
             --image ${{ vars.DOCKER_IMAGE_URL }}:latest \
             --platform managed \
             --region asia-southeast1 \
+            --vpc-connector ${{ vars.VPC_CONNECTOR }} \
             --allow-unauthenticated
+
+      - name: Run migrations
+        run: |
+          gcloud run jobs create migrate \
+            --image=${{ vars.DOCKER_IMAGE_URL }}:latest \
+            --region=asia-southeast1 \
+            --vpc-connector=${{ vars.VPC_CONNECTOR }} \
+            --set-cloudsql-instances=${{ vars.CLOUD_SQL_INSTANCE }} \
+            --command=php \
+            --args="artisan migrate --force"
