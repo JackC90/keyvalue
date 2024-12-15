@@ -26,9 +26,5 @@ WORKDIR /app
 
 RUN /usr/local/bin/composer install --no-dev --optimize-autoloader
 
-RUN chmod +x docker/entrypoint.sh
-
 #run the command for starting the server
 CMD sh docker/startup.sh
-
-ENTRYPOINT ["docker/entrypoint.sh"]
